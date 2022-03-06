@@ -2,16 +2,20 @@
 
 namespace DataStructs;
 
-public class DoublyLinkedList<T> : ICollection<T> where T: IComparable
+public class DoublyLinkedList<T> : ICollection<T> where T: IComparable<T>
 {
+    public event EventHandler<CollectionUpdateEventHandler<T>>? ItemAdd;
+    public event EventHandler<CollectionUpdateEventHandler<T>>? ItemRemoved;
+    public event EventHandler<CollectionUpdateEventHandler<T>>? CollectionCleared;
+
     private Node<T>? Head { get; set; }
     private Node<T>? Tail { get; set; }
     public int Count { get; private set; }
     public bool IsReadOnly => false;
 
-    public void Add(T element)
+    public void Add(T item)
     {
-        var temp = new Node<T>(element);
+        var temp = new Node<T>(item);
 
         // This is a first element, so head & tail is a same element
         if (Head == null)
@@ -25,9 +29,15 @@ public class DoublyLinkedList<T> : ICollection<T> where T: IComparable
         Tail = temp;
 
         ++Count;
+
+        ItemAdd?.Invoke(this, new CollectionUpdateEventHandler<T>()
+        {
+            Value = item,
+            ActionType = CollectionActionType.ItemAdd
+        });
     }
     
-    public bool Contains(T? element)
+    public bool Contains(T? item)
     {
         var temp = Head;
 
@@ -36,14 +46,14 @@ public class DoublyLinkedList<T> : ICollection<T> where T: IComparable
             return false;
         }
 
-        if (element is null && temp.Data is null)
+        if (item is null && temp.Data is null)
         {
             return true;
         }
 
         while (temp?.Next != null)
         {
-            if (temp.Data?.CompareTo(element) == 0)
+            if (temp.Data?.CompareTo(item) == 0)
             {
                 return true;
             }
@@ -51,7 +61,7 @@ public class DoublyLinkedList<T> : ICollection<T> where T: IComparable
             temp = temp.Next;
         }
 
-        return temp!.Data?.CompareTo(element) == 0;
+        return temp!.Data?.CompareTo(item) == 0;
     }
 
     /// <summary>
@@ -85,6 +95,11 @@ public class DoublyLinkedList<T> : ICollection<T> where T: IComparable
             nextNode.Prev = prevNode;
         }
 
+        ItemRemoved?.Invoke(this, new CollectionUpdateEventHandler<T>()
+        {
+            Value = item,
+            ActionType = CollectionActionType.ItemRemove
+        });
         return true;
     }
 
@@ -134,6 +149,11 @@ public class DoublyLinkedList<T> : ICollection<T> where T: IComparable
         Head = null;
         Tail = null;
         Count = 0;
+        
+        CollectionCleared?.Invoke(this, new CollectionUpdateEventHandler<T>()
+        {
+            ActionType = CollectionActionType.CollectionCleared
+        });
     }
 
     public IEnumerator<T> GetEnumerator()
@@ -153,24 +173,24 @@ public class DoublyLinkedList<T> : ICollection<T> where T: IComparable
             return null;
         }
 
-        var reqNode = Head;
+        var temp = Head;
 
-        while (reqNode!.Next != null)
+        while (temp!.Next != null)
         {
-            if (reqNode.Data?.CompareTo(item) == 0)
+            if (temp.Data?.CompareTo(item) == 0)
             {
-                return reqNode;
+                return temp;
             }
 
-            reqNode = reqNode.Next;
+            temp = temp.Next;
         }
 
-        if (reqNode.Data == null && item == null)
+        if (temp.Data == null && item == null)
         {
-            return reqNode;
+            return temp;
         }
         
-        return reqNode.Data!.CompareTo(item) == 0 ? reqNode : null;
+        return temp.Data!.CompareTo(item) == 0 ? temp : null;
     }
     
     private struct DoublyLinkedListEnumerator : IEnumerator<T>
