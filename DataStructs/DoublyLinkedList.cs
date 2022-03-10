@@ -2,7 +2,7 @@
 
 namespace DataStructs;
 
-public class DoublyLinkedList<T> : ICollection<T> where T: IComparable<T>
+public class DoublyLinkedList<T> : ICollection<T> where T : IComparable<T>
 {
     public event EventHandler<CollectionUpdateEventHandler<T>>? ItemAdd;
     public event EventHandler<CollectionUpdateEventHandler<T>>? ItemRemoved;
@@ -36,7 +36,7 @@ public class DoublyLinkedList<T> : ICollection<T> where T: IComparable<T>
             ActionType = CollectionActionType.ItemAdd
         });
     }
-    
+
     public bool Contains(T? item)
     {
         var temp = Head;
@@ -77,12 +77,8 @@ public class DoublyLinkedList<T> : ICollection<T> where T: IComparable<T>
         }
 
         var nodeToRemove = GetNode(item);
-        if (nodeToRemove is null)
-        {
-            return false;
-        }
 
-        var prevNode = nodeToRemove.Prev;
+        var prevNode = nodeToRemove!.Prev;
         var nextNode = nodeToRemove.Next;
 
         if (prevNode != null)
@@ -105,7 +101,7 @@ public class DoublyLinkedList<T> : ICollection<T> where T: IComparable<T>
 
     public void CopyTo(T?[] array, int arrayIndex)
     {
-        if ((uint) arrayIndex <= array.Length)
+        if ((uint) arrayIndex >= array.Length)
         {
             throw new ArgumentException("Index outbound of a range");
         }
@@ -134,8 +130,13 @@ public class DoublyLinkedList<T> : ICollection<T> where T: IComparable<T>
             return null;
         }
 
+        if (index >= Count)
+        {
+            return null;
+        }
+        
         var currNode = Head;
-        while (currNode!.Next != null || index != nodesPassed)
+        while (index < nodesPassed && currNode is {Next: { }})
         {
             currNode = currNode.Next;
             ++nodesPassed;
@@ -149,7 +150,7 @@ public class DoublyLinkedList<T> : ICollection<T> where T: IComparable<T>
         Head = null;
         Tail = null;
         Count = 0;
-        
+
         CollectionCleared?.Invoke(this, new CollectionUpdateEventHandler<T>()
         {
             ActionType = CollectionActionType.CollectionCleared
@@ -189,10 +190,10 @@ public class DoublyLinkedList<T> : ICollection<T> where T: IComparable<T>
         {
             return temp;
         }
-        
+
         return temp.Data!.CompareTo(item) == 0 ? temp : null;
     }
-    
+
     private struct DoublyLinkedListEnumerator : IEnumerator<T>
     {
         public T? Current { get; private set; }
@@ -215,17 +216,15 @@ public class DoublyLinkedList<T> : ICollection<T> where T: IComparable<T>
 
         public bool MoveNext()
         {
-            if (_currentNode == null) {
+            if (_currentNode == null)
+            {
                 return false;
             }
 
-            Current = _currentNode.Data;   
-            _currentNode = _currentNode.Next;  
-            if (_currentNode == _list.Head) {
-                _currentNode = null;
-            }
+            Current = _currentNode.Data;
+            _currentNode = _currentNode.Next;
 
-            return true;
+            return _currentNode != _list.Head;
         }
 
         public void Reset()
